@@ -19,7 +19,7 @@ const createUser = (body) => {
         if (error) {
           reject(error);
         }
-        resolve(`A new user has been added added`);
+        resolve(`A new user has been added added.`);
       }
     );
   });
