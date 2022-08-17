@@ -90,6 +90,7 @@ router.post("/createAccount", (req, res) => {
                       username,
                       email,
                       password: hashedPassword,
+                      verified: false,
                     })
                     .then((result) => {
                       sendVerificationEmail(result, res);
@@ -200,7 +201,7 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
       if (result) {
         //found
         verificationModel.getVerificationInfo(userId).then((result) => {
-          const expiresAt = result.expiresAt;
+          const expiresAt = result.expiresat;
           const hashedUniqueString = result.uniquestring;
           //expired verification email
           if (expiresAt < Date.now()) {
@@ -226,7 +227,7 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
               .catch((error) => {
                 console.log(error);
                 let message =
-                  "An error occurred while checking for existing verification email";
+                  "An error occurred while checking for existing verification email3";
                 res.redirect(`/user/verified/error=true&message=${message}`);
               });
           } else {
@@ -281,14 +282,14 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
       } else {
         //not found
         let message =
-          "An error occurred while checking for existing verification email";
+          "An error occurred while checking for existing verification email1";
         res.redirect(`/user/verified/error=true&message=${message}`);
       }
     })
     .catch((error) => {
       console.log(error);
       let message =
-        "An error occurred while checking for existing verification email";
+        "An error occurred while checking for existing verification email2";
       res.redirect(`/user/verified/error=true&message=${message}`);
     });
 });
