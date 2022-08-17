@@ -12,21 +12,24 @@ const createUser = (body) => {
         if (error) {
           reject(error);
         }
-        resolve(`A new user has been added added.`);
+        resolve(results.rows[0]);
       }
     );
   });
 };
 //delete a user
-const deleteUser = () => {
+const deleteUser = (userId) => {
   return new Promise(function (resolve, reject) {
-    const id = parseInt(request.params.id);
-    pool.query("DELETE FROM users WHERE id = $1", [id], (error, results) => {
-      if (error) {
-        reject(error);
+    pool.query(
+      "DELETE FROM users WHERE id = $1",
+      [userId],
+      (error, results) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(`user deleted with ID: ${userId}`);
       }
-      resolve(`user deleted with ID: ${id}`);
-    });
+    );
   });
 };
 
@@ -86,10 +89,44 @@ const getPassword = (email) => {
   });
 };
 
+//get password from email
+const getVerificationStatus = (userId) => {
+  return new Promise(function (resolve, reject) {
+    pool.query(
+      "SELECT * FROM users WHERE id = $1",
+      [userId],
+      (error, results) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(results.rows[0].verified);
+      }
+    );
+  });
+};
+
+//update verfied attribute
+const updateVerification = (userId) => {
+  return new Promise(function (resolve, reject) {
+    pool.query(
+      "UPDATE users SET verified = $1 WHERE id = $2",
+      [true, userId],
+      (error, results) => {
+        if (error) {
+          reject(error);
+        }
+        resolve("successfully updated verifcation status");
+      }
+    );
+  });
+};
+
 module.exports = {
   createUser,
   deleteUser,
   findUsername,
   findEmail,
   getPassword,
+  getVerificationStatus,
+  updateVerification,
 };
