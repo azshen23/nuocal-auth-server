@@ -199,92 +199,81 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
     .findUserVerification(userId)
     .then((result) => {
       console.log(result);
-      if (result) {
-        //found
-        verificationModel.getVerificationInfo(userId).then((result) => {
-          const expiresAt = result.expiresat;
-          const hashedUniqueString = result.uniquestring;
-          //expired verification email
-          if (expiresAt < Date.now()) {
-            //delete recrod.
-            verificationModel
-              .deleteVerification(userId)
-              .then(() => {
+      //found
+      verificationModel.getVerificationInfo(userId).then((result) => {
+        const expiresAt = result.expiresat;
+        const hashedUniqueString = result.uniquestring;
+        //expired verification email
+        if (expiresAt < Date.now()) {
+          //delete recrod.
+          verificationModel
+            .deleteVerification(userId)
+            .then(() => {
+              userModel
+                .deleteUser(userId)
+                .then(() => {
+                  let message = "Link has expired, please sign up again";
+                  res.redirect(`/user/verified/error=true&message=${message}`);
+                })
+                .catch((error) => {
+                  let message = "An error occurred while deleting user";
+                  res.redirect(`/user/verified/error=true&message=${message}`);
+                });
+            })
+            .catch((error) => {
+              console.log(error);
+              let message =
+                "An error occurred while checking for existing verification email3";
+              res.redirect(`/user/verified/error=true&message=${message}`);
+            });
+        } else {
+          //valid verification email timeframe
+          bcrypt
+            .compare(uniqueString, hashedUniqueString)
+            .then((result) => {
+              if (result) {
+                //strings match
                 userModel
-                  .deleteUser(userId)
+                  .updateVerification(userId)
                   .then(() => {
-                    let message = "Link has expired, please sign up again";
-                    res.redirect(
-                      `/user/verified/error=true&message=${message}`
-                    );
+                    //delete verifciation email record
+                    verificationModel
+                      .deleteVerification(userId)
+                      .then(() => {
+                        res.sendFile(
+                          path.join(__dirname, "./../views/verified.html")
+                        );
+                      })
+                      .catch((error) => {
+                        console.log(error);
+                        let message =
+                          "An error occurred while updating user record to show verification status";
+                        res.redirect(
+                          `/user/verified/error=true&message=${message}`
+                        );
+                      });
                   })
                   .catch((error) => {
-                    let message = "An error occurred while deleting user";
+                    console.log(error);
+                    let message =
+                      "An error occurred while deleting verification record";
                     res.redirect(
                       `/user/verified/error=true&message=${message}`
                     );
                   });
-              })
-              .catch((error) => {
-                console.log(error);
-                let message =
-                  "An error occurred while checking for existing verification email3";
+              } else {
+                let message = "Invalid verifcation details";
                 res.redirect(`/user/verified/error=true&message=${message}`);
-              });
-          } else {
-            //valid verification email timeframe
-            bcrypt
-              .compare(uniqueString, hashedUniqueString)
-              .then((result) => {
-                if (result) {
-                  //strings match
-                  userModel
-                    .updateVerification(userId)
-                    .then(() => {
-                      //delete verifciation email record
-                      verificationModel
-                        .deleteVerification(userId)
-                        .then(() => {
-                          res.sendFile(
-                            path.join(__dirname, "./../views/verified.html")
-                          );
-                        })
-                        .catch((error) => {
-                          console.log(error);
-                          let message =
-                            "An error occurred while updating user record to show verification status";
-                          res.redirect(
-                            `/user/verified/error=true&message=${message}`
-                          );
-                        });
-                    })
-                    .catch((error) => {
-                      console.log(error);
-                      let message =
-                        "An error occurred while deleting verification record";
-                      res.redirect(
-                        `/user/verified/error=true&message=${message}`
-                      );
-                    });
-                } else {
-                  let message = "Invalid verifcation details";
-                  res.redirect(`/user/verified/error=true&message=${message}`);
-                }
-              })
-              .catch((error) => {
-                console.log(error);
-                let message =
-                  "An error occurred while comparing for unique strings";
-                res.redirect(`/user/verified/error=true&message=${message}`);
-              });
-          }
-        });
-      } else {
-        //not found
-        let message =
-          "An error occurred while checking for existing verification email1";
-        res.redirect(`/user/verified/error=true&message=${message}`);
-      }
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+              let message =
+                "An error occurred while comparing for unique strings";
+              res.redirect(`/user/verified/error=true&message=${message}`);
+            });
+        }
+      });
     })
     .catch((error) => {
       console.log(error);

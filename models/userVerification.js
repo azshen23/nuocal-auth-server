@@ -42,11 +42,8 @@ const findUserVerification = (userId) => {
         if (error) {
           reject(error);
         }
-        if (result.rows[0].exists == false) {
-          resolve(null);
-        } else {
-          resolve(`email found with userId: ${userId}`);
-        }
+
+        resolve(`email found with userId: ${userId}`);
       }
     );
   });
