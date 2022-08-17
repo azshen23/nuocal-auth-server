@@ -74,7 +74,7 @@ router.post("/createAccount", (req, res) => {
                     .catch((err) => {
                       res.json({
                         status: "FAILED",
-                        message: "An error occurred while creating the user",
+                        message: "An error occurred while creating the user.",
                       });
                     });
                 })
