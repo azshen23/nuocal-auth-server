@@ -201,7 +201,7 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
       console.log(result);
       //found
       verificationModel.getVerificationInfo(userId).then((result) => {
-        const expiresAt = result.expiresAt;
+        const expiresAt = result.expiresat;
         const hashedUniqueString = result.uniquestring;
         //expired verification email
         if (expiresAt < Date.now()) {
