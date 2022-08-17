@@ -111,6 +111,11 @@ router.post("/login", (req, res) => {
       status: "FAILED",
       message: "Please do not leave any fields empty",
     });
+  } else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+    res.json({
+      status: "FAILED",
+      message: "Email is not valid",
+    });
   } else {
     //check if email exists
     userModel

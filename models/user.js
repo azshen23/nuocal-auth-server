@@ -1,12 +1,5 @@
-require("dotenv").config();
 const Pool = require("pg").Pool;
-console.log("hello", process.env.DB_USER);
-const pool = new Pool({
-  user: process.env.DB_USER,
-  database: process.env.DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
+const pool = new Pool();
 
 //create a user
 const createUser = (body) => {
