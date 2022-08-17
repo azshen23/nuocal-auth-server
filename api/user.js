@@ -166,6 +166,7 @@ const sendVerificationEmail = ({ id, email }, res) => {
               });
             })
             .catch((err) => {
+              console.log(err);
               res.json({
                 status: "FAILED",
                 message: "Verification email failed",
@@ -199,7 +200,7 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
       if (result) {
         //found
         verificationModel.getVerificationInfo(userId).then((result) => {
-          const expiresAt = result.expiresat;
+          const expiresAt = result.expiresAt;
           const hashedUniqueString = result.uniquestring;
           //expired verification email
           if (expiresAt < Date.now()) {
