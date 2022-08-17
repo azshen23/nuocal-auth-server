@@ -198,6 +198,7 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
   verificationModel
     .findUserVerification(userId)
     .then((result) => {
+      console.log(result);
       if (result) {
         //found
         verificationModel.getVerificationInfo(userId).then((result) => {
@@ -232,7 +233,6 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
               });
           } else {
             //valid verification email timeframe
-            console.log(uniqueString, hashedUniqueString);
             bcrypt
               .compare(uniqueString, hashedUniqueString)
               .then((result) => {
