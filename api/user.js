@@ -121,7 +121,7 @@ router.post("/createAccount", (req, res) => {
 
 //send verification email
 const sendVerificationEmail = ({ id, email }, res) => {
-  const currentUrl = "https://nuocal.up.railway.app";
+  const currentUrl = "https://nuocal.up.railway.app/";
 
   const uniqueString = uuidv4() + id;
 
