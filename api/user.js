@@ -124,15 +124,14 @@ const sendVerificationEmail = ({ id, email }, res) => {
   const currentUrl = "https://nuocal.up.railway.app/";
 
   const uniqueString = uuidv4() + id;
-
+  const link = currentUrl + "user/verify/" + id + "/" + uniqueString;
   const mailOptions = {
     from: process.env.MAIL_USER,
     to: email,
     subject: "Verify your Email",
     html: `<p>Please click on the following link to verify your email address:</p>
-    <p>This link <b>expires in 48 hours</b></p><p><a href=${
-      currentUrl + "user/verify/" + id + "/" + uniqueString
-    }>Link</a></p>`,
+    <p>This link <b>expires in 48 hours</b></p>
+    <p><a href=${link}>${link}</a></p>`,
   };
 
   // hash the uniqueString
@@ -161,7 +160,7 @@ const sendVerificationEmail = ({ id, email }, res) => {
               console.log(err);
               res.json({
                 status: "FAILED",
-                message: "Verification email failed",
+                message: "Verification email failed to send",
               });
             });
         })
