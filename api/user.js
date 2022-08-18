@@ -96,6 +96,7 @@ router.post("/createAccount", (req, res) => {
                       sendVerificationEmail(result, res);
                     })
                     .catch((err) => {
+                      console.log(err);
                       res.json({
                         status: "FAILED",
                         message: "An error occurred while creating the user.",
@@ -103,6 +104,7 @@ router.post("/createAccount", (req, res) => {
                     });
                 })
                 .catch((err) => {
+                  console.log(err);
                   res.json({
                     status: "FAILED",
                     message: "An error occurred while hashing the password",
@@ -194,7 +196,7 @@ const sendVerificationEmail = ({ id, email }, res) => {
 //verify email
 router.get("/verify/:userId/:uniqueString", (req, res) => {
   let { userId, uniqueString } = req.params;
-
+  console.log("I GOT GET CALLED");
   verificationModel
     .findUserVerification(userId)
     .then((result) => {
@@ -205,7 +207,7 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
         const hashedUniqueString = result.uniquestring;
         //expired verification email
         if (expiresAt < Date.now()) {
-          //delete recrod.
+          //delete record.
           verificationModel
             .deleteVerification(userId)
             .then(() => {
@@ -216,6 +218,7 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
                   res.redirect(`/user/verified/error=true&message=${message}`);
                 })
                 .catch((error) => {
+                  console.log(error);
                   let message = "An error occurred while deleting user";
                   res.redirect(`/user/verified/error=true&message=${message}`);
                 });
