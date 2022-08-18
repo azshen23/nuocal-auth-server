@@ -24,15 +24,6 @@ let transporter = nodemailer.createTransport({
   },
 });
 
-//testing success
-transporter.verify((error, success) => {
-  if (error) {
-    console.log(error);
-  } else {
-    console.log(success);
-  }
-});
-
 router.post("/createAccount", (req, res) => {
   let { name, username, email, password } = req.body;
   name = name.trim();
@@ -130,7 +121,7 @@ router.post("/createAccount", (req, res) => {
 
 //send verification email
 const sendVerificationEmail = ({ id, email }, res) => {
-  const currentUrl = "https://nuocal.up.railway.app/";
+  const currentUrl = "https://nuocal.up.railway.app";
 
   const uniqueString = uuidv4() + id;
 
@@ -139,9 +130,9 @@ const sendVerificationEmail = ({ id, email }, res) => {
     to: email,
     subject: "Verify your Email",
     html: `<p>Please click on the following link to verify your email address:</p>
-    <p>This link <b>expires in 6 hours</b></p><p><a href=${
+    <p>This link <b>expires in 48 hours</b></p><p><a href=${
       currentUrl + "user/verify/" + id + "/" + uniqueString
-    }>Link</a></p></p>`,
+    }>Link</a></p>`,
   };
 
   // hash the uniqueString
@@ -155,8 +146,6 @@ const sendVerificationEmail = ({ id, email }, res) => {
         .createUserVerification({
           userId: id,
           uniqueString: hashedUniqueString,
-          createdAt: Date.now(),
-          expiresAt: Date.now() + 21600000,
         })
         .then(() => {
           transporter
@@ -204,9 +193,10 @@ router.get("/verify/:userId/:uniqueString", (req, res) => {
       //found
       verificationModel.getVerificationInfo(userId).then((result) => {
         const expiresAt = result.expiresat;
+        var now = new Date();
         const hashedUniqueString = result.uniquestring;
         //expired verification email
-        if (expiresAt < Date.now()) {
+        if (expiresAt.toISOString() < now.toISOString()) {
           //delete record.
           verificationModel
             .deleteVerification(userId)
