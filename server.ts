@@ -1,9 +1,11 @@
-const app = require("express")();
+import bodyParser from "body-parser";
+import express from "express";
+
+const app = express();
 const port = process.env.PORT || 3001;
 
-import * as userRouter from "./api/user";
+const userRouter = require("./api/user");
 
-const bodyParser = require("body-parser");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
