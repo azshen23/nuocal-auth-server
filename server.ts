@@ -1,7 +1,7 @@
 const app = require("express")();
 const port = process.env.PORT || 3001;
 
-const userRouter = require("./api/user");
+import * as userRouter from "./api/user";
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.json());
