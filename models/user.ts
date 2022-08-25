@@ -2,13 +2,13 @@ const Pool = require("pg").Pool;
 const pool = new Pool();
 
 //create a user
-const createUser = (body) => {
+const createUser = (body: any) => {
   return new Promise(function (resolve, reject) {
     const { name, username, email, password } = body;
     pool.query(
       "INSERT INTO users (name, username, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
       [name, username, email, password],
-      (error, results) => {
+      (error: any, results: any) => {
         if (error) {
           reject(error);
         }
@@ -18,12 +18,12 @@ const createUser = (body) => {
   });
 };
 //delete a user
-const deleteUser = (userId) => {
+const deleteUser = (userId: number) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "DELETE FROM users WHERE id = $1",
       [userId],
-      (error, results) => {
+      (error: any, results: any) => {
         if (error) {
           reject(error);
         }
@@ -34,12 +34,12 @@ const deleteUser = (userId) => {
 };
 
 //check if username exists
-const findUsername = (username) => {
+const findUsername = (username: string) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)",
       [username],
-      (error, result) => {
+      (error: any, result: any) => {
         if (error) {
           reject(error);
         }
@@ -54,12 +54,12 @@ const findUsername = (username) => {
 };
 
 //check if email exists
-const findEmail = (email) => {
+const findEmail = (email: string) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)",
       [email],
-      (error, result) => {
+      (error: any, result: any) => {
         if (error) {
           reject(error);
         }
@@ -74,12 +74,12 @@ const findEmail = (email) => {
 };
 
 //get password from email
-const getPassword = (email) => {
+const getPassword = (email: string) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email],
-      (error, results) => {
+      (error: any, results: any) => {
         if (error) {
           reject(error);
         }
@@ -90,12 +90,12 @@ const getPassword = (email) => {
 };
 
 //get password from email
-const getVerificationStatus = (userId) => {
+const getVerificationStatus = (userId: number) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "SELECT * FROM users WHERE id = $1",
       [userId],
-      (error, results) => {
+      (error: any, results: any) => {
         if (error) {
           reject(error);
         }
@@ -106,12 +106,12 @@ const getVerificationStatus = (userId) => {
 };
 
 //update verfied attribute
-const updateVerification = (userId) => {
+const updateVerification = (userId: number) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "UPDATE users SET verified = $1 WHERE id = $2",
       [true, userId],
-      (error, results) => {
+      (error: any, results: any) => {
         if (error) {
           reject(error);
         }

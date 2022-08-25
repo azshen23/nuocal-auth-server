@@ -1,4 +1,5 @@
-const express = require("express");
+import * as express from "express";
+import { Request, Response } from "express";
 const router = express.Router();
 const userModel = require("../models/user");
 const verificationModel = require("../models/userVerification");
@@ -24,7 +25,7 @@ let transporter = nodemailer.createTransport({
   },
 });
 
-router.post("/createAccount", (req, res) => {
+router.post("/createAccount", (req: Request, res: Response) => {
   let { name, username, email, password } = req.body;
   name = name.trim();
   username = username.trim();
@@ -60,7 +61,7 @@ router.post("/createAccount", (req, res) => {
     //check if username exists
     userModel
       .findUsername(username)
-      .then((result) => {
+      .then((result: any) => {
         if (result) {
           res.json({
             status: "FAILED",
@@ -68,13 +69,13 @@ router.post("/createAccount", (req, res) => {
           });
         } else {
           //check if email exists
-          userModel.findEmail(email).then((result) => {
+          userModel.findEmail(email).then((result: any) => {
             if (result) {
               //password handling
               const saltRound = 10;
               bcrypt
                 .hash(password, saltRound)
-                .then((hashedPassword) => {
+                .then((hashedPassword: string) => {
                   userModel
                     .createUser({
                       name,
@@ -83,10 +84,10 @@ router.post("/createAccount", (req, res) => {
                       password: hashedPassword,
                       verified: false,
                     })
-                    .then((result) => {
+                    .then((result: any) => {
                       sendVerificationEmail(result, res);
                     })
-                    .catch((err) => {
+                    .catch((err: any) => {
                       console.log(err);
                       res.json({
                         status: "FAILED",
@@ -94,7 +95,7 @@ router.post("/createAccount", (req, res) => {
                       });
                     });
                 })
-                .catch((err) => {
+                .catch((err: any) => {
                   console.log(err);
                   res.json({
                     status: "FAILED",
@@ -110,7 +111,7 @@ router.post("/createAccount", (req, res) => {
           });
         }
       })
-      .catch((err) => {
+      .catch((err: any) => {
         res.json({
           status: "FAILED",
           message: "An Error occurred while checking for existing username",
@@ -120,7 +121,7 @@ router.post("/createAccount", (req, res) => {
 });
 
 //send verification email
-const sendVerificationEmail = ({ id, email }, res) => {
+const sendVerificationEmail = ({ id, email }: any, res: Response) => {
   var randomNumber = Math.floor(Math.random() * 99999);
 
   const mailOptions = {
@@ -148,7 +149,7 @@ const sendVerificationEmail = ({ id, email }, res) => {
             message: "Verifcation email is pending",
           });
         })
-        .catch((err) => {
+        .catch((err: any) => {
           console.log(err);
           res.json({
             status: "FAILED",
@@ -156,7 +157,7 @@ const sendVerificationEmail = ({ id, email }, res) => {
           });
         });
     })
-    .catch((error) => {
+    .catch((error: any) => {
       console.log(error);
       res.json({
         status: "FAILED",
@@ -165,9 +166,9 @@ const sendVerificationEmail = ({ id, email }, res) => {
     });
 };
 
-router.post("/verify", (req, res) => {});
+router.post("/verify", (req: Request, res: Response) => {});
 
-router.post("/login", (req, res) => {
+router.post("/login", (req: Request, res: Response) => {
   let { email, password } = req.body;
   email = email.trim();
   password = password.trim();
@@ -185,7 +186,7 @@ router.post("/login", (req, res) => {
     //check if email exists
     userModel
       .findEmail(email)
-      .then((result) => {
+      .then((result: any) => {
         if (result) {
           res.json({
             status: "FAILED",
@@ -195,10 +196,10 @@ router.post("/login", (req, res) => {
           //get hashedpassword of account
           userModel
             .getPassword(email)
-            .then((hashedPassword) => {
+            .then((hashedPassword: string) => {
               bcrypt
                 .compare(password, hashedPassword)
-                .then((result) => {
+                .then((result: any) => {
                   if (result) {
                     res.json({
                       status: "SUCCESS",
@@ -211,14 +212,14 @@ router.post("/login", (req, res) => {
                     });
                   }
                 })
-                .catch((err) => {
+                .catch((err: any) => {
                   res.json({
                     status: "FAILED",
                     message: "An Error occurred while validating credentials",
                   });
                 });
             })
-            .catch((err) => {
+            .catch((err: any) => {
               res.json({
                 status: "FAILED",
                 message: "An Error occurred while trying to get password",
@@ -226,7 +227,7 @@ router.post("/login", (req, res) => {
             });
         }
       })
-      .catch((error) => {
+      .catch((error: any) => {
         res.json({
           status: "FAILED",
           message: "Email does not exist",
