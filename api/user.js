@@ -121,54 +121,38 @@ router.post("/createAccount", (req, res) => {
 
 //send verification email
 const sendVerificationEmail = ({ id, email }, res) => {
-  const currentUrl = "https://nuocal.up.railway.app/";
+  var randomNumber = Math.floor(Math.random() * 99999);
 
-  const uniqueString = uuidv4() + id;
-  const link = currentUrl + "user/verify/" + id + "/" + uniqueString;
   const mailOptions = {
     from: process.env.MAIL_USER,
     to: email,
     subject: "Verify your Email",
-    html: `<p>Please click on the following link to verify your email address:</p>
-    <p>This link <b>expires in 48 hours</b></p>
-    <p><a href=${link}>${link}</a></p>`,
+    html: `<p>Please use the following code to verify your email:</p>
+    <p>This code <b>expires in 60 seconds</b></p>
+    <p>${randomNumber}</p>`,
   };
 
-  // hash the uniqueString
-
-  const saltRounds = 10;
-  bcrypt
-    .hash(uniqueString, saltRounds)
-    .then((hashedUniqueString) => {
-      // set values in userVerification collection
-      verificationModel
-        .createUserVerification({
-          userId: id,
-          uniqueString: hashedUniqueString,
-        })
+  // set values in userVerification collection
+  verificationModel
+    .createUserVerification({
+      userId: id,
+      verificationCode: randomNumber,
+    })
+    .then(() => {
+      transporter
+        .sendMail(mailOptions)
         .then(() => {
-          transporter
-            .sendMail(mailOptions)
-            .then(() => {
-              //email has been sent and record saved
-              res.json({
-                status: "PENDING",
-                message: "Verifcation email is pending",
-              });
-            })
-            .catch((err) => {
-              console.log(err);
-              res.json({
-                status: "FAILED",
-                message: "Verification email failed to send",
-              });
-            });
+          //email has been sent and record saved
+          res.json({
+            status: "PENDING",
+            message: "Verifcation email is pending",
+          });
         })
-        .catch((error) => {
-          console.log(error);
+        .catch((err) => {
+          console.log(err);
           res.json({
             status: "FAILED",
-            message: "Couldn't save verification email data",
+            message: "Verification email failed to send",
           });
         });
     })
@@ -176,109 +160,12 @@ const sendVerificationEmail = ({ id, email }, res) => {
       console.log(error);
       res.json({
         status: "FAILED",
-        message: "An error occurred while hashing email data",
+        message: "Couldn't save verification email data",
       });
     });
 };
 
-//verify email
-router.get("/verify/:userId/:uniqueString", (req, res) => {
-  let { userId, uniqueString } = req.params;
-  console.log("I GOT GET CALLED");
-  verificationModel
-    .findUserVerification(userId)
-    .then((result) => {
-      console.log(result);
-      //found
-      verificationModel.getVerificationInfo(userId).then((result) => {
-        const expiresAt = result.expiresat;
-        var now = new Date();
-        const hashedUniqueString = result.uniquestring;
-        //expired verification email
-        if (expiresAt.toISOString() < now.toISOString()) {
-          //delete record.
-          verificationModel
-            .deleteVerification(userId)
-            .then(() => {
-              userModel
-                .deleteUser(userId)
-                .then(() => {
-                  let message = "Link has expired, please sign up again";
-                  res.redirect(`/user/verified/error=true&message=${message}`);
-                })
-                .catch((error) => {
-                  console.log(error);
-                  let message = "An error occurred while deleting user";
-                  res.redirect(`/user/verified/error=true&message=${message}`);
-                });
-            })
-            .catch((error) => {
-              console.log(error);
-              let message =
-                "An error occurred while checking for existing verification email3";
-              res.redirect(`/user/verified/error=true&message=${message}`);
-            });
-        } else {
-          //valid verification email timeframe
-          bcrypt
-            .compare(uniqueString, hashedUniqueString)
-            .then((result) => {
-              if (result) {
-                //strings match
-                userModel
-                  .updateVerification(userId)
-                  .then(() => {
-                    //delete verifciation email record
-                    verificationModel
-                      .deleteVerification(userId)
-                      .then(() => {
-                        res.sendFile(
-                          path.join(__dirname, "./../views/verified.html")
-                        );
-                      })
-                      .catch((error) => {
-                        console.log(error);
-                        let message =
-                          "An error occurred while updating user record to show verification status";
-                        res.redirect(
-                          `/user/verified/error=true&message=${message}`
-                        );
-                      });
-                  })
-                  .catch((error) => {
-                    console.log(error);
-                    let message =
-                      "An error occurred while deleting verification record";
-                    res.redirect(
-                      `/user/verified/error=true&message=${message}`
-                    );
-                  });
-              } else {
-                let message = "Invalid verifcation details";
-                res.redirect(`/user/verified/error=true&message=${message}`);
-              }
-            })
-            .catch((error) => {
-              console.log(error);
-              let message =
-                "An error occurred while comparing for unique strings";
-              res.redirect(`/user/verified/error=true&message=${message}`);
-            });
-        }
-      });
-    })
-    .catch((error) => {
-      console.log(error);
-      let message =
-        "An error occurred while checking for existing verification email2";
-      res.redirect(`/user/verified/error=true&message=${message}`);
-    });
-});
-
-//verified page route
-router.get("/verified", (req, res) => {
-  res.sendFile(path.join(__dirname, "./../views/verified.html"));
-});
+router.post("/verify", (req, res) => {});
 
 router.post("/login", (req, res) => {
   let { email, password } = req.body;

@@ -3,10 +3,10 @@ const pool = new Pool();
 
 const createUserVerification = (body) => {
   return new Promise(function (resolve, reject) {
-    const { userId, uniqueString } = body;
+    const { userId, verificationCode } = body;
     pool.query(
-      "INSERT INTO userVerification (userId, uniqueString, createdAt, expiresAt) VALUES ($1, $2, current_timestamp, current_timestamp + '48 hours') RETURNING *",
-      [userId, uniqueString],
+      "INSERT INTO userVerification (userId, verificationCode, createdAt, expiresAt) VALUES ($1, $2, current_timestamp, current_timestamp + '48 hours') RETURNING *",
+      [userId, verificationCode],
       (error, results) => {
         if (error) {
           reject(error);
