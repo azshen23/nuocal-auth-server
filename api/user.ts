@@ -122,14 +122,14 @@ router.post("/createAccount", (req: Request, res: Response) => {
 
 //send verification email
 const sendVerificationEmail = ({ id, email }: any, res: Response) => {
-  var randomNumber = Math.floor(Math.random() * 99999);
+  var randomNumber = Math.floor(Math.random() * 90000) + 10000;
 
   const mailOptions = {
     from: process.env.MAIL_USER,
     to: email,
     subject: "Verify your Email",
     html: `<p>Please use the following code to verify your email:</p>
-    <p>This code <b>expires in 60 seconds</b></p>
+    <p>This code <b>expires in 5 minutes... Time is ticking :)</b></p>
     <p>${randomNumber}</p>`,
   };
 
@@ -166,7 +166,56 @@ const sendVerificationEmail = ({ id, email }: any, res: Response) => {
     });
 };
 
-router.post("/verify", (req: Request, res: Response) => {});
+router.post("/verifyEmail", async (req: Request, res: Response) => {
+  try {
+    const userID: number = req.body.userID;
+    const verificationCode: number = req.body.verificationCode;
+    //check for valid inputs
+    if (!userID || !verificationCode) {
+      throw Error("Empty credentials");
+    } else {
+      //check if the verifcation code is valid
+      const verificationInfo: any = await verificationModel.getVerificationInfo(
+        userID
+      );
+
+      const storedCode: number = verificationInfo.verificationcode;
+      const expiresAt = new Date(verificationInfo.expiresat);
+      if (!storedCode || !expiresAt) {
+        throw new Error("Had trouble getting storedCode or expiredAt");
+      }
+      var now = new Date();
+      if (expiresAt < now) {
+        //delete verifcation code since it is expired
+        await verificationModel.deleteVerification(userID);
+        throw new Error("Code Expired");
+      } else {
+        if (!storedCode) {
+          throw new Error("Null verification code");
+        } else {
+          //check if the verifcation code is valid
+          if (storedCode !== verificationCode) {
+            throw new Error("Verification code is invalid");
+          } else {
+            //verify the user
+            await userModel.updateVerification(userID);
+            //remove verification code from database
+            await verificationModel.deleteVerification(userID);
+            res.json({
+              status: "SUCCESS",
+              message: "Successfully Verified User",
+            });
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    res.json({
+      status: "FAILED",
+      message: err.message,
+    });
+  }
+});
 
 router.post("/login", (req: Request, res: Response) => {
   let { email, password } = req.body;

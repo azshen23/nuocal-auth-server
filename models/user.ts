@@ -2,7 +2,7 @@ const Pool = require("pg").Pool;
 const pool = new Pool();
 
 //create a user
-const createUser = (body: any) => {
+const createUser = async (body: any) => {
   return new Promise(function (resolve, reject) {
     const { name, username, email, password } = body;
     pool.query(
@@ -18,7 +18,7 @@ const createUser = (body: any) => {
   });
 };
 //delete a user
-const deleteUser = (userId: number) => {
+const deleteUser = async (userId: number) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "DELETE FROM users WHERE id = $1",

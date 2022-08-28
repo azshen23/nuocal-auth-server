@@ -1,12 +1,14 @@
 import * as Pool from "pg";
 const pool = new Pool.Pool();
 
-const createUserVerification = (body: any) => {
+const createUserVerification = async (body: any) => {
   return new Promise(function (resolve, reject) {
     const { userId, verificationCode } = body;
+    var curr = new Date();
+    var expired = new Date(curr.getTime() + 5 * 60000);
     pool.query(
-      "INSERT INTO userVerification (userId, verificationCode, createdAt, expiresAt) VALUES ($1, $2, current_timestamp, current_timestamp + '48 hours') RETURNING *",
-      [userId, verificationCode],
+      "INSERT INTO userVerification (userId, verificationCode, createdAt, expiresAt) VALUES ($1, $2, $3, $4) RETURNING *",
+      [userId, verificationCode, curr, expired],
       (error: any, results: any) => {
         if (error) {
           reject(error);
@@ -18,7 +20,7 @@ const createUserVerification = (body: any) => {
 };
 
 //delete a verifcation record
-const deleteVerification = (userId: number) => {
+const deleteVerification = async (userId: number) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "DELETE FROM userVerification WHERE userId = $1",
@@ -33,7 +35,7 @@ const deleteVerification = (userId: number) => {
   });
 };
 
-const findUserVerification = (userId: number) => {
+const findUserVerification = async (userId: number) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "SELECT EXISTS(SELECT 1 FROM userVerification WHERE userId = $1)",
@@ -50,7 +52,7 @@ const findUserVerification = (userId: number) => {
 };
 
 //get values from userId
-const getVerificationInfo = (userId: number) => {
+const getVerificationInfo = async (userId: number) => {
   return new Promise(function (resolve, reject) {
     pool.query(
       "SELECT * FROM userVerification WHERE userId = $1",
