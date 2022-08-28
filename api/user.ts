@@ -5,16 +5,11 @@ const userModel = require("../models/user");
 const verificationModel = require("../models/userVerification");
 
 //email handeler
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
 //Password handler
-const bcrypt = require("bcrypt");
-//unique string
-const { v4: uuidv4 } = require("uuid");
+import bcrypt from "bcrypt";
 
 require("dotenv").config();
-
-//path for static verified page
-const path = require("path");
 
 //nodemailer stuff
 let transporter = nodemailer.createTransport({
