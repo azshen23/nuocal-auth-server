@@ -1,7 +1,5 @@
 import * as express from "express";
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
 const router = express.Router();
 const userModel = require("../models/user");
 const verificationModel = require("../models/userVerification");
