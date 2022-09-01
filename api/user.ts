@@ -1,5 +1,7 @@
 import * as express from "express";
 import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 const router = express.Router();
 const userModel = require("../models/user");
 const verificationModel = require("../models/userVerification");
@@ -20,7 +22,7 @@ let transporter = nodemailer.createTransport({
   },
 });
 
-router.post("/createAccount", (req: Request, res: Response) => {
+router.post("/createAccount", async (req: Request, res: Response) => {
   let { name, username, email, password } = req.body;
   name = name.trim();
   username = username.trim();
@@ -53,65 +55,45 @@ router.post("/createAccount", (req: Request, res: Response) => {
       message: "Password is too short",
     });
   } else {
-    //check if username exists
-    userModel
-      .findUsername(username)
-      .then((result: any) => {
-        if (result) {
-          res.json({
-            status: "FAILED",
-            message: "Username already exists",
-          });
+    try {
+      //check if username exists
+      const userNameExists: boolean = await userModel.findUsername(username);
+      if (userNameExists) {
+        throw new Error(`User ${username} already exists`);
+      } else {
+        //check if email exists
+        const emailExists: boolean = await userModel.findEmail(email);
+
+        if (!emailExists) {
+          throw new Error(`Email ${email} already exists`);
         } else {
-          //check if email exists
-          userModel.findEmail(email).then((result: any) => {
-            if (result) {
-              //password handling
-              const saltRound = 10;
-              bcrypt
-                .hash(password, saltRound)
-                .then((hashedPassword: string) => {
-                  userModel
-                    .createUser({
-                      name,
-                      username,
-                      email,
-                      password: hashedPassword,
-                      verified: false,
-                    })
-                    .then((result: any) => {
-                      sendVerificationEmail(result, res);
-                    })
-                    .catch((err: any) => {
-                      console.log(err);
-                      res.json({
-                        status: "FAILED",
-                        message: "An error occurred while creating the user.",
-                      });
-                    });
-                })
-                .catch((err: any) => {
-                  console.log(err);
-                  res.json({
-                    status: "FAILED",
-                    message: "An error occurred while hashing the password",
-                  });
-                });
+          //password handling
+          const saltRound = 10;
+          const hashedPassword: string = await bcrypt.hash(password, saltRound);
+
+          if (!hashedPassword) {
+            throw new Error("Password hashing failed");
+          } else {
+            const user = await userModel.createUser({
+              name,
+              username,
+              email,
+              password: hashedPassword,
+            });
+            if (!user) {
+              throw new Error("An error occurred while creating the user.");
             } else {
-              res.json({
-                status: "FAILED",
-                message: "An account already exists with this email address",
-              });
+              sendVerificationEmail(user, res);
             }
-          });
+          }
         }
-      })
-      .catch((err: any) => {
-        res.json({
-          status: "FAILED",
-          message: "An Error occurred while checking for existing username",
-        });
+      }
+    } catch (err: any) {
+      res.json({
+        status: "FAILED",
+        message: err.message,
       });
+    }
   }
 });
 

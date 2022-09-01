@@ -1,22 +1,22 @@
 const Pool = require("pg").Pool;
 const pool = new Pool();
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 //create a user
-const createUser = async (body: any) => {
-  return new Promise(function (resolve, reject) {
-    const { name, username, email, password } = body;
-    pool.query(
-      "INSERT INTO users (name, username, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
-      [name, username, email, password],
-      (error: any, results: any) => {
-        if (error) {
-          reject(error);
-        }
-        resolve(results.rows[0]);
-      }
-    );
+async function createUser(body: any) {
+  const { name, username, email, password } = body;
+  const user = await prisma.users.create({
+    data: {
+      name: name,
+      username: username,
+      email: email,
+      password: password,
+    },
   });
-};
+  return user;
+}
+
 //delete a user
 const deleteUser = async (userId: number) => {
   return new Promise(function (resolve, reject) {
