@@ -17,77 +17,46 @@ async function createUser(body: any) {
   return user;
 }
 
-//delete a user
-const deleteUser = async (userId: number) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "DELETE FROM users WHERE id = $1",
-      [userId],
-      (error: any, results: any) => {
-        if (error) {
-          reject(error);
-        }
-        resolve(`user deleted with ID: ${userId}`);
-      }
-    );
+async function deleteUser(userId: number) {
+  await prisma.users.delete({
+    where: {
+      id: userId,
+    },
   });
-};
+}
 
-//check if username exists
-const findUsername = (username: string) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)",
-      [username],
-      (error: any, result: any) => {
-        if (error) {
-          reject(error);
-        }
-        if (result.rows[0].exists == false) {
-          resolve(null);
-        } else {
-          resolve(`user found with username: ${username}`);
-        }
-      }
-    );
+//checks is username exists already by counting the number of users with that username
+async function usernameExists(username: string) {
+  const usernameCount = await prisma.users.count({
+    where: {
+      username: username,
+    },
   });
-};
+  return usernameCount;
+}
 
 //check if email exists
-const findEmail = (email: string) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)",
-      [email],
-      (error: any, result: any) => {
-        if (error) {
-          reject(error);
-        }
-        if (result.rows[0].exists == false) {
-          resolve(`user does not exist with email: ${email}`);
-        } else {
-          resolve(null);
-        }
-      }
-    );
+async function emailExists(email: string) {
+  const emailCount = await prisma.users.count({
+    where: {
+      email: email,
+    },
   });
-};
+  return emailCount;
+}
 
 //get password from email
-const getPassword = (email: string) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email],
-      (error: any, results: any) => {
-        if (error) {
-          reject(error);
-        }
-        resolve(results.rows[0].password);
-      }
-    );
+async function getPasswordFromEmail(email: string) {
+  const user = await prisma.users.findUnique({
+    where: {
+      email: email,
+    },
+    select: {
+      password: true,
+    },
   });
-};
+  return user?.password;
+}
 
 //get password from email
 const getVerificationStatus = (userId: number) => {
@@ -124,9 +93,9 @@ const updateVerification = (userId: number) => {
 module.exports = {
   createUser,
   deleteUser,
-  findUsername,
-  findEmail,
-  getPassword,
+  usernameExists,
+  emailExists,
+  getPasswordFromEmail,
   getVerificationStatus,
   updateVerification,
 };

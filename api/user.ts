@@ -55,14 +55,14 @@ router.post("/createAccount", async (req: Request, res: Response) => {
   } else {
     try {
       //check if username exists
-      const userNameExists: boolean = await userModel.findUsername(username);
-      if (userNameExists) {
+      const userNameExists: number = await userModel.usernameExists(username);
+      if (userNameExists > 0) {
         throw new Error(`User ${username} already exists`);
       } else {
         //check if email exists
-        const emailExists: boolean = await userModel.findEmail(email);
+        const emailExists: number = await userModel.emailExists(email);
 
-        if (!emailExists) {
+        if (emailExists > 0) {
           throw new Error(`Email ${email} already exists`);
         } else {
           //password handling
@@ -192,7 +192,7 @@ router.post("/verifyEmail", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/login", (req: Request, res: Response) => {
+router.post("/login", async (req: Request, res: Response) => {
   let { email, password } = req.body;
   email = email.trim();
   password = password.trim();
@@ -207,56 +207,41 @@ router.post("/login", (req: Request, res: Response) => {
       message: "Email is not valid",
     });
   } else {
-    //check if email exists
-    userModel
-      .findEmail(email)
-      .then((result: any) => {
-        if (result) {
-          res.json({
-            status: "FAILED",
-            message: "User with this email does not exist",
-          });
+    try {
+      //check if email exists
+      const emailExists: number = await userModel.emailExists(email);
+
+      if (emailExists == 0) {
+        throw new Error("Email does not exist");
+      } else {
+        const hashedPassword: string = await userModel.getPasswordFromEmail(
+          email
+        );
+        if (!hashedPassword) {
+          throw new Error(
+            "An error occurred while trying to retrieve password"
+          );
         } else {
-          //get hashedpassword of account
-          userModel
-            .getPassword(email)
-            .then((hashedPassword: string) => {
-              bcrypt
-                .compare(password, hashedPassword)
-                .then((result: any) => {
-                  if (result) {
-                    res.json({
-                      status: "SUCCESS",
-                      message: "Sign in successfully",
-                    });
-                  } else {
-                    res.json({
-                      status: "FAILED",
-                      message: "Invalid password",
-                    });
-                  }
-                })
-                .catch((err: any) => {
-                  res.json({
-                    status: "FAILED",
-                    message: "An Error occurred while validating credentials",
-                  });
-                });
-            })
-            .catch((err: any) => {
-              res.json({
-                status: "FAILED",
-                message: "An Error occurred while trying to get password",
-              });
+          const correctPassword: boolean = await bcrypt.compare(
+            password,
+            hashedPassword
+          );
+          if (!correctPassword) {
+            throw new Error("Password is incorrect");
+          } else {
+            res.json({
+              status: "SUCCESS",
+              message: "Sign in successfully",
             });
+          }
         }
-      })
-      .catch((error: any) => {
-        res.json({
-          status: "FAILED",
-          message: "Email does not exist",
-        });
+      }
+    } catch (err: any) {
+      res.json({
+        status: "FAILED",
+        message: err.message,
       });
+    }
   }
 });
 
