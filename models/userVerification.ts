@@ -1,39 +1,32 @@
 import * as Pool from "pg";
 const pool = new Pool.Pool();
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
-const createUserVerification = async (body: any) => {
-  return new Promise(function (resolve, reject) {
-    const { userId, verificationCode } = body;
-    var curr = new Date();
-    var expired = new Date(curr.getTime() + 5 * 60000);
-    pool.query(
-      "INSERT INTO userVerification (userId, verificationCode, createdAt, expiresAt) VALUES ($1, $2, $3, $4) RETURNING *",
-      [userId, verificationCode, curr, expired],
-      (error: any, results: any) => {
-        if (error) {
-          reject(error);
-        }
-        resolve("successfullly created user verification email record");
-      }
-    );
+//create a user
+async function createUserVerification(body: any) {
+  const { userId, verificationCode } = body;
+  var curr = new Date();
+  var expired = new Date(curr.getTime() + 5 * 60000);
+  const userVer = await prisma.userverification.create({
+    data: {
+      userid: userId,
+      verificationcode: verificationCode,
+      createdat: curr.toString(),
+      expiresat: expired.toString(),
+    },
   });
-};
+  return userVer;
+}
 
 //delete a verifcation record
-const deleteVerification = async (userId: number) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "DELETE FROM userVerification WHERE userId = $1",
-      [userId],
-      (error, results) => {
-        if (error) {
-          reject(error);
-        }
-        resolve(`user deleted with userId: ${userId}`);
-      }
-    );
+async function deleteVerification(userId: number) {
+  await prisma.userverification.delete({
+    where: {
+      userid: userId,
+    },
   });
-};
+}
 
 const findUserVerification = async (userId: number) => {
   return new Promise(function (resolve, reject) {

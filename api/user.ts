@@ -8,6 +8,7 @@ const verificationModel = require("../models/userVerification");
 import nodemailer from "nodemailer";
 //Password handler
 import bcrypt from "bcrypt";
+import { resolve } from "path";
 
 require("dotenv").config();
 
@@ -96,7 +97,7 @@ router.post("/createAccount", async (req: Request, res: Response) => {
 });
 
 //send verification email
-const sendVerificationEmail = ({ id, email }: any, res: Response) => {
+const sendVerificationEmail = async ({ id, email }: any, res: Response) => {
   var randomNumber = Math.floor(Math.random() * 90000) + 10000;
 
   const mailOptions = {
@@ -107,38 +108,27 @@ const sendVerificationEmail = ({ id, email }: any, res: Response) => {
     <p>This code <b>expires in 5 minutes... Time is ticking :)</b></p>
     <p>${randomNumber}</p>`,
   };
-
-  // set values in userVerification collection
-  verificationModel
-    .createUserVerification({
+  try {
+    // set values in userVerification collection
+    const ver = await verificationModel.createUserVerification({
       userId: id,
       verificationCode: randomNumber,
-    })
-    .then(() => {
-      transporter
-        .sendMail(mailOptions)
-        .then(() => {
-          //email has been sent and record saved
-          res.json({
-            status: "PENDING",
-            message: "Verifcation email is pending",
-          });
-        })
-        .catch((err: any) => {
-          console.log(err);
-          res.json({
-            status: "FAILED",
-            message: "Verification email failed to send",
-          });
-        });
-    })
-    .catch((error: any) => {
-      console.log(error);
-      res.json({
-        status: "FAILED",
-        message: "Couldn't save verification email data",
-      });
     });
+    if (!ver) {
+      throw new Error("User Verifcation Creation Failed");
+    } else {
+      await transporter.sendMail(mailOptions);
+      res.json({
+        status: "PENDING",
+        message: "Verifcation email is pending",
+      });
+    }
+  } catch (err: any) {
+    res.json({
+      status: "FAILED",
+      message: err.message,
+    });
+  }
 };
 
 router.post("/verifyEmail", async (req: Request, res: Response) => {

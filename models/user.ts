@@ -46,6 +46,7 @@ async function emailExists(email: string) {
 }
 
 //get password from email
+
 async function getPasswordFromEmail(email: string) {
   const user = await prisma.users.findUnique({
     where: {
