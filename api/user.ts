@@ -217,7 +217,8 @@ router.post("/login", async (req: Request, res: Response) => {
         throw new Error("Email does not exist");
       } else {
         const hashedPassword: string = await userModel.getPasswordFromEmail(
-          email
+          email,
+          prisma
         );
         if (!hashedPassword) {
           throw new Error(
