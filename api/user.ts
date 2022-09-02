@@ -3,12 +3,13 @@ import { Request, Response } from "express";
 const router = express.Router();
 const userModel = require("../models/user");
 const verificationModel = require("../models/userVerification");
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 //email handeler
 import nodemailer from "nodemailer";
 //Password handler
 import bcrypt from "bcrypt";
-import { resolve } from "path";
 
 require("dotenv").config();
 
@@ -56,12 +57,15 @@ router.post("/createAccount", async (req: Request, res: Response) => {
   } else {
     try {
       //check if username exists
-      const userNameExists: number = await userModel.usernameExists(username);
+      const userNameExists: number = await userModel.usernameExists(
+        username,
+        prisma
+      );
       if (userNameExists > 0) {
         throw new Error(`User ${username} already exists`);
       } else {
         //check if email exists
-        const emailExists: number = await userModel.emailExists(email);
+        const emailExists: number = await userModel.emailExists(email, prisma);
 
         if (emailExists > 0) {
           throw new Error(`Email ${email} already exists`);
@@ -73,12 +77,15 @@ router.post("/createAccount", async (req: Request, res: Response) => {
           if (!hashedPassword) {
             throw new Error("Password hashing failed");
           } else {
-            const user = await userModel.createUser({
-              name,
-              username,
-              email,
-              password: hashedPassword,
-            });
+            const user = await userModel.createUser(
+              {
+                name,
+                username,
+                email,
+                password: hashedPassword,
+              },
+              prisma
+            );
             if (!user) {
               throw new Error("An error occurred while creating the user.");
             } else {
@@ -110,10 +117,13 @@ const sendVerificationEmail = async ({ id, email }: any, res: Response) => {
   };
   try {
     // set values in userVerification collection
-    const ver = await verificationModel.createUserVerification({
-      userId: id,
-      verificationCode: randomNumber,
-    });
+    const ver = await verificationModel.createUserVerification(
+      {
+        userId: id,
+        verificationCode: randomNumber,
+      },
+      prisma
+    );
     if (!ver) {
       throw new Error("User Verifcation Creation Failed");
     } else {
@@ -152,7 +162,7 @@ router.post("/verifyEmail", async (req: Request, res: Response) => {
       var now = new Date();
       if (expiresAt < now) {
         //delete verifcation code since it is expired
-        await verificationModel.deleteVerification(userID);
+        await verificationModel.deleteVerification(userID, prisma);
         throw new Error("Code Expired");
       } else {
         if (!storedCode) {
@@ -199,7 +209,7 @@ router.post("/login", async (req: Request, res: Response) => {
   } else {
     try {
       //check if email exists
-      const emailExists: number = await userModel.emailExists(email);
+      const emailExists: number = await userModel.emailExists(email, prisma);
 
       if (emailExists == 0) {
         throw new Error("Email does not exist");

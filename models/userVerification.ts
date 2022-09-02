@@ -1,10 +1,8 @@
 import * as Pool from "pg";
 const pool = new Pool.Pool();
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
 
 //create a user
-async function createUserVerification(body: any) {
+async function createUserVerification(body: any, prisma: any) {
   const { userId, verificationCode } = body;
   var curr = new Date();
   var expired = new Date(curr.getTime() + 5 * 60000);
@@ -20,7 +18,7 @@ async function createUserVerification(body: any) {
 }
 
 //delete a verifcation record
-async function deleteVerification(userId: number) {
+async function deleteVerification(userId: number, prisma: any) {
   await prisma.userverification.delete({
     where: {
       userid: userId,

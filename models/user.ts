@@ -1,10 +1,8 @@
 const Pool = require("pg").Pool;
 const pool = new Pool();
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
 
 //create a user
-async function createUser(body: any) {
+async function createUser(body: any, prisma: any) {
   const { name, username, email, password } = body;
   const user = await prisma.users.create({
     data: {
@@ -17,7 +15,7 @@ async function createUser(body: any) {
   return user;
 }
 
-async function deleteUser(userId: number) {
+async function deleteUser(userId: number, prisma: any) {
   await prisma.users.delete({
     where: {
       id: userId,
@@ -26,7 +24,7 @@ async function deleteUser(userId: number) {
 }
 
 //checks is username exists already by counting the number of users with that username
-async function usernameExists(username: string) {
+async function usernameExists(username: string, prisma: any) {
   const usernameCount = await prisma.users.count({
     where: {
       username: username,
@@ -36,7 +34,7 @@ async function usernameExists(username: string) {
 }
 
 //check if email exists
-async function emailExists(email: string) {
+async function emailExists(email: string, prisma: any) {
   const emailCount = await prisma.users.count({
     where: {
       email: email,
@@ -47,7 +45,7 @@ async function emailExists(email: string) {
 
 //get password from email
 
-async function getPasswordFromEmail(email: string) {
+async function getPasswordFromEmail(email: string, prisma: any) {
   const user = await prisma.users.findUnique({
     where: {
       email: email,
