@@ -151,7 +151,8 @@ router.post("/verifyEmail", async (req: Request, res: Response) => {
     } else {
       //check if the verifcation code is valid
       const verificationInfo: any = await verificationModel.getVerificationInfo(
-        userID
+        userID,
+        prisma
       );
 
       const storedCode: number = verificationInfo.verificationcode;
@@ -173,9 +174,10 @@ router.post("/verifyEmail", async (req: Request, res: Response) => {
             throw new Error("Verification code is invalid");
           } else {
             //verify the user
-            await userModel.updateVerification(userID);
+            await userModel.updateVerification(userID, prisma);
+
             //remove verification code from database
-            await verificationModel.deleteVerification(userID);
+            await verificationModel.deleteVerification(userID, prisma);
             res.json({
               status: "SUCCESS",
               message: "Successfully Verified User",

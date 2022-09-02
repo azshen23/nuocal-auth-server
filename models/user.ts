@@ -57,37 +57,29 @@ async function getPasswordFromEmail(email: string, prisma: any) {
   return user?.password;
 }
 
-//get password from email
-const getVerificationStatus = (userId: number) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "SELECT * FROM users WHERE id = $1",
-      [userId],
-      (error: any, results: any) => {
-        if (error) {
-          reject(error);
-        }
-        resolve(results.rows[0].verified);
-      }
-    );
+async function getVerificationStatus(userId: number, prisma: any) {
+  const user = await prisma.userverification.findUnique({
+    where: {
+      userid: userId,
+    },
+    select: {
+      verified: true,
+    },
   });
-};
+  return user?.verified;
+}
 
 //update verfied attribute
-const updateVerification = (userId: number) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "UPDATE users SET verified = $1 WHERE id = $2",
-      [true, userId],
-      (error: any, results: any) => {
-        if (error) {
-          reject(error);
-        }
-        resolve("successfully updated verifcation status");
-      }
-    );
+async function updateVerification(userId: number, prisma: any) {
+  await prisma.users.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      verified: true,
+    },
   });
-};
+}
 
 module.exports = {
   createUser,

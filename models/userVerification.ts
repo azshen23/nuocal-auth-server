@@ -26,37 +26,28 @@ async function deleteVerification(userId: number, prisma: any) {
   });
 }
 
-const findUserVerification = async (userId: number) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "SELECT EXISTS(SELECT 1 FROM userVerification WHERE userId = $1)",
-      [userId],
-      (error, result) => {
-        if (error) {
-          reject(error);
-        }
-
-        resolve(`email found with userId: ${userId}`);
-      }
-    );
+async function findUserVerification(userId: number, prisma: any) {
+  const emailCount = await prisma.userverification.count({
+    where: {
+      userid: userId,
+    },
   });
-};
+  return emailCount;
+}
 
 //get values from userId
-const getVerificationInfo = async (userId: number) => {
-  return new Promise(function (resolve, reject) {
-    pool.query(
-      "SELECT * FROM userVerification WHERE userId = $1",
-      [userId],
-      (error, results) => {
-        if (error) {
-          reject(error);
-        }
-        resolve(results.rows[0]);
-      }
-    );
+async function getVerificationInfo(userId: number, prisma: any) {
+  const user = await prisma.userverification.findUnique({
+    where: {
+      userid: userId,
+    },
+    select: {
+      verificationcode: true,
+      expiresat: true,
+    },
   });
-};
+  return user;
+}
 
 module.exports = {
   deleteVerification,
