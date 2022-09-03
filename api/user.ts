@@ -312,7 +312,7 @@ export const userRouter = trpc
         if (!req.input) {
           throw new Error("Invalid request");
         }
-        await tokenModel.logout(req.input.token);
+        await tokenModel.deleteRefreshToken(req.input.token);
         return "Successfully logged out";
       } catch (err: any) {
         return {
