@@ -212,7 +212,6 @@ export const userRouter = trpc
               email,
               prisma
             );
-            console.log(userData);
             const hashedPassword = userData.password;
             const userID = userData.id;
             if (!hashedPassword) {
@@ -265,7 +264,7 @@ export const userRouter = trpc
     },
   })
   //returns a jwt access token using the refresh token
-  .mutation("token", {
+  .mutation("refresh", {
     input: z.object({
       token: z.string(),
     }),
@@ -282,7 +281,6 @@ export const userRouter = trpc
         if (tokenCount == 0) {
           throw new Error("Refresh token does not exist");
         } else {
-          console.log(req.input.token);
           //verifies refreshToken
           const user = await decodeAndVerifyRefreshToken(req.input.token);
           //creates new access token

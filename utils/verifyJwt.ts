@@ -15,5 +15,6 @@ export async function decodeAndVerifyRefreshToken(token: string) {
     token,
     process.env.REFRESH_TOKEN_SECRET!
   ) as User;
+  if (!decodedToken) throw new Error("error decoding refresh token");
   return decodedToken;
 }
