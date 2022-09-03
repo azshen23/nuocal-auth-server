@@ -1,18 +1,21 @@
-import * as express from "express";
-import { Request, Response } from "express";
-const router = express.Router();
 const userModel = require("../models/user");
 const verificationModel = require("../models/userVerification");
+const tokenModel = require("../models/token");
 import * as trpc from "@trpc/server";
 import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
+import jwt from "jsonwebtoken";
+import { decodeAndVerifyRefreshToken } from "../utils/verifyJwt";
+import { Context } from "../context";
+import { User } from "../utils/verifyJwt";
+
 const prisma = new PrismaClient();
 
 //email handeler
 import nodemailer from "nodemailer";
 //Password handler
 import bcrypt from "bcrypt";
-
+import { TRPCError } from "@trpc/server";
 require("dotenv").config();
 
 //nodemailer stuff
@@ -24,8 +27,8 @@ let transporter = nodemailer.createTransport({
   },
 });
 
-const userRouter = trpc
-  .router()
+export const userRouter = trpc
+  .router<Context>()
   .mutation("createAccount", {
     input: z.object({
       name: z.string(),
@@ -205,10 +208,13 @@ const userRouter = trpc
           if (emailExists == 0) {
             throw new Error("Email does not exist");
           } else {
-            const hashedPassword: string = await userModel.getPasswordFromEmail(
+            const userData = await userModel.getIDPasswordFromEmail(
               email,
               prisma
             );
+            console.log(userData);
+            const hashedPassword = userData.password;
+            const userID = userData.id;
             if (!hashedPassword) {
               throw new Error(
                 "An error occurred while trying to retrieve password"
@@ -221,10 +227,31 @@ const userRouter = trpc
               if (!correctPassword) {
                 throw new Error("Password is incorrect");
               } else {
-                return {
-                  status: "SUCCESS",
-                  message: "Sign in successfully",
-                };
+                const user: User = { email: email };
+                const accessToken = jwt.sign(
+                  user,
+                  process.env.ACCESS_TOKEN_SECRET!,
+                  { expiresIn: "30m" }
+                );
+                const refreshToken = jwt.sign(
+                  user,
+                  process.env.REFRESH_TOKEN_SECRET!
+                );
+                const tokenData = await tokenModel.addNewRefreshToken(
+                  refreshToken,
+                  userID,
+                  prisma
+                );
+                if (!tokenData) {
+                  throw new Error("Refresh token failed to be created");
+                } else {
+                  return {
+                    accessToken: accessToken,
+                    refreshToken: refreshToken,
+                    status: "SUCCESS",
+                    message: "Sign in successfully",
+                  };
+                }
               }
             }
           }
@@ -235,6 +262,55 @@ const userRouter = trpc
           };
         }
       }
+    },
+  })
+  //returns a jwt access token using the refresh token
+  .mutation("token", {
+    input: z.object({
+      token: z.string(),
+    }),
+    async resolve(req) {
+      try {
+        if (!req.input) {
+          throw new Error("Invalid request");
+        }
+        //check if refreshToken is valid
+        const tokenCount: number = tokenModel.refreshTokenExists(
+          req.input,
+          prisma
+        );
+        if (tokenCount == 0) {
+          throw new Error("Refresh token does not exist");
+        } else {
+          console.log(req.input.token);
+          //verifies refreshToken
+          const user = await decodeAndVerifyRefreshToken(req.input.token);
+          //creates new access token
+          const accessToken = jwt.sign(
+            { email: user.email },
+            process.env.ACCESS_TOKEN_SECRET!,
+            {
+              expiresIn: "15m",
+            }
+          );
+          return {
+            accessToken: accessToken,
+          };
+        }
+      } catch (err: any) {
+        return {
+          status: "FAILED",
+          message: err.message,
+        };
+      }
+    },
+  })
+  .query("getUser", {
+    async resolve({ ctx }) {
+      if (!ctx.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      return "hello";
     },
   });
 
@@ -276,4 +352,4 @@ const sendVerificationEmail = async ({ id, email }: any) => {
   }
 };
 
-module.exports = userRouter;
+export type userRouter = typeof userRouter;

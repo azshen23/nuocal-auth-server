@@ -22,3 +22,8 @@ model userverification {
   createdat        String?
   expiresat        String?
 }
+
+model refreshtokens {
+  token  String @id
+  userid Int
+}

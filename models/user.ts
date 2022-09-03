@@ -1,6 +1,3 @@
-const Pool = require("pg").Pool;
-const pool = new Pool();
-
 //create a user
 async function createUser(body: any, prisma: any) {
   const { name, username, email, password } = body;
@@ -45,16 +42,17 @@ async function emailExists(email: string, prisma: any) {
 
 //get password from email
 
-async function getPasswordFromEmail(email: string, prisma: any) {
+async function getIDPasswordFromEmail(email: string, prisma: any) {
   const user = await prisma.users.findUnique({
     where: {
       email: email,
     },
     select: {
+      id: true,
       password: true,
     },
   });
-  return user?.password;
+  return user;
 }
 
 async function getVerificationStatus(userId: number, prisma: any) {
@@ -86,7 +84,7 @@ module.exports = {
   deleteUser,
   usernameExists,
   emailExists,
-  getPasswordFromEmail,
+  getIDPasswordFromEmail,
   getVerificationStatus,
   updateVerification,
 };

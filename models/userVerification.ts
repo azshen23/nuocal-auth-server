@@ -1,6 +1,3 @@
-import * as Pool from "pg";
-const pool = new Pool.Pool();
-
 //create a user
 async function createUserVerification(body: any, prisma: any) {
   const { userId, verificationCode } = body;
