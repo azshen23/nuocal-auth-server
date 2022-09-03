@@ -303,6 +303,25 @@ export const userRouter = trpc
       }
     },
   })
+  .mutation("logout", {
+    input: z.object({
+      token: z.string(),
+    }),
+    async resolve(req) {
+      try {
+        if (!req.input) {
+          throw new Error("Invalid request");
+        }
+        await tokenModel.logout(req.input.token);
+        return "Successfully logged out";
+      } catch (err: any) {
+        return {
+          status: "FAILED",
+          message: err.message,
+        };
+      }
+    },
+  })
   .query("getUser", {
     async resolve({ ctx }) {
       if (!ctx.user) {
