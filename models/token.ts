@@ -31,4 +31,5 @@ async function deleteRefreshToken(token: any, prisma: any) {
 module.exports = {
   addNewRefreshToken,
   refreshTokenExists,
+  deleteRefreshToken,
 };
