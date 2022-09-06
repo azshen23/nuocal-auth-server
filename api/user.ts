@@ -53,7 +53,7 @@ export const userRouter = trpc
           status: "FAILED",
           message: "Name is not valid",
         };
-      } else if (!/^[a-zA-Z]+$/.test(name)) {
+      } else if (!/^[a-zA-Z]+$/.test(username)) {
         return {
           status: "FAILED",
           message: "Username is not valid",
@@ -133,7 +133,10 @@ export const userRouter = trpc
         const verificationCode: number = req.input.verificationCode;
         //check for valid inputs
         if (!userID || !verificationCode) {
-          throw Error("Empty credentials");
+          throw new trpc.TRPCError({
+            code: "BAD_REQUEST",
+            message: "Empty userId or verificationCode",
+          });
         } else {
           //check if the verifcation code is valid
           const verificationInfo: any =
@@ -142,31 +145,36 @@ export const userRouter = trpc
           const storedCode: number = verificationInfo.verificationcode;
           const expiresAt = new Date(verificationInfo.expiresat);
           if (!storedCode || !expiresAt) {
-            throw new Error("Had trouble getting storedCode or expiredAt");
+            throw new trpc.TRPCError({
+              code: "NOT_FOUND",
+              message: "Could not get stored code or expiresAt",
+            });
           }
           var now = new Date();
           if (expiresAt < now) {
             //delete verifcation code since it is expired
             await verificationModel.deleteVerification(userID, prisma);
-            throw new Error("Code Expired");
+            throw new trpc.TRPCError({
+              code: "NOT_FOUND",
+              message: "An unexpected error occurred, please try again later.",
+            });
           } else {
-            if (!storedCode) {
-              throw new Error("Null verification code");
+            //check if the verifcation code is valid
+            if (storedCode !== verificationCode) {
+              throw new trpc.TRPCError({
+                code: "BAD_REQUEST",
+                message: "Invalid verification code",
+              });
             } else {
-              //check if the verifcation code is valid
-              if (storedCode !== verificationCode) {
-                throw new Error("Verification code is invalid");
-              } else {
-                //verify the user
-                await userModel.updateVerification(userID, prisma);
+              //verify the user
+              await userModel.updateVerification(userID, prisma);
 
-                //remove verification code from database
-                await verificationModel.deleteVerification(userID, prisma);
-                return {
-                  status: "SUCCESS",
-                  message: "Successfully Verified User",
-                };
-              }
+              //remove verification code from database
+              await verificationModel.deleteVerification(userID, prisma);
+              return {
+                status: "SUCCESS",
+                message: "Successfully Verified User",
+              };
             }
           }
         }
