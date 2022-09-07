@@ -1,11 +1,12 @@
 import jwt from "jsonwebtoken";
 export interface User {
+  id: string;
   email: string;
 }
 
 export async function decodeAndVerifyJwtToken(token: string) {
   return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!, (err, user) => {
-    if (err) console.log("error");
+    if (err) console.log(err);
     return user;
   });
 }

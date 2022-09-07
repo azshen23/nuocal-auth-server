@@ -234,11 +234,11 @@ export const userRouter = trpc
               if (!correctPassword) {
                 throw new Error("Password is incorrect");
               } else {
-                const user: User = { email: email };
+                const user: User = { id: userID, email: email };
                 const accessToken = jwt.sign(
                   user,
                   process.env.ACCESS_TOKEN_SECRET!,
-                  { expiresIn: "30m" }
+                  { expiresIn: "30 minutes" }
                 );
                 const refreshToken = jwt.sign(
                   user,
@@ -293,10 +293,10 @@ export const userRouter = trpc
           const user = await decodeAndVerifyRefreshToken(req.input.token);
           //creates new access token
           const accessToken = jwt.sign(
-            { email: user.email },
+            { id: user.id, email: user.email },
             process.env.ACCESS_TOKEN_SECRET!,
             {
-              expiresIn: "15m",
+              expiresIn: "30m",
             }
           );
           return {
