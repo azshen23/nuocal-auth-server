@@ -9,8 +9,6 @@ import { decodeAndVerifyRefreshToken } from "../utils/verifyJwt";
 import { Context } from "../context";
 import { User } from "../utils/verifyJwt";
 
-const prisma = new PrismaClient();
-
 //email handeler
 import nodemailer from "nodemailer";
 //Password handler
@@ -72,17 +70,13 @@ export const userRouter = trpc
         try {
           //check if username exists
           const userNameExists: number = await userModel.usernameExists(
-            username,
-            prisma
+            username
           );
           if (userNameExists > 0) {
             throw new Error(`User ${username} already exists`);
           } else {
             //check if email exists
-            const emailExists: number = await userModel.emailExists(
-              email,
-              prisma
-            );
+            const emailExists: number = await userModel.emailExists(email);
             if (emailExists > 0) {
               throw new Error(`Email ${email} already exists`);
             } else {
@@ -96,15 +90,12 @@ export const userRouter = trpc
               if (!hashedPassword) {
                 throw new Error("Password hashing failed");
               } else {
-                const user = await userModel.createUser(
-                  {
-                    name,
-                    username,
-                    email,
-                    password: hashedPassword,
-                  },
-                  prisma
-                );
+                const user = await userModel.createUser({
+                  name,
+                  username,
+                  email,
+                  password: hashedPassword,
+                });
                 if (!user) {
                   throw new Error("An error occurred while creating the user.");
                 } else {
@@ -140,7 +131,7 @@ export const userRouter = trpc
         } else {
           //check if the verifcation code is valid
           const verificationInfo: any =
-            await verificationModel.getVerificationInfo(userID, prisma);
+            await verificationModel.getVerificationInfo(userID);
 
           const storedCode: number = verificationInfo.verificationcode;
           const expiresAt = new Date(verificationInfo.expiresat);
@@ -153,7 +144,7 @@ export const userRouter = trpc
           var now = new Date();
           if (expiresAt < now) {
             //delete verifcation code since it is expired
-            await verificationModel.deleteVerification(userID, prisma);
+            await verificationModel.deleteVerification(userID);
             throw new trpc.TRPCError({
               code: "NOT_FOUND",
               message: "An unexpected error occurred, please try again later.",
@@ -167,10 +158,10 @@ export const userRouter = trpc
               });
             } else {
               //verify the user
-              await userModel.updateVerification(userID, prisma);
+              await userModel.updateVerification(userID);
 
               //remove verification code from database
-              await verificationModel.deleteVerification(userID, prisma);
+              await verificationModel.deleteVerification(userID);
               return {
                 status: "SUCCESS",
                 message: "Successfully Verified User",
@@ -208,18 +199,12 @@ export const userRouter = trpc
       } else {
         try {
           //check if email exists
-          const emailExists: number = await userModel.emailExists(
-            email,
-            prisma
-          );
+          const emailExists: number = await userModel.emailExists(email);
 
           if (emailExists == 0) {
             throw new Error("Email does not exist");
           } else {
-            const userData = await userModel.getIDPasswordFromEmail(
-              email,
-              prisma
-            );
+            const userData = await userModel.getIDPasswordFromEmail(email);
             const hashedPassword = userData.password;
             const userID = userData.id;
             if (!hashedPassword) {
@@ -246,8 +231,7 @@ export const userRouter = trpc
                 );
                 const tokenData = await tokenModel.addNewRefreshToken(
                   refreshToken,
-                  userID,
-                  prisma
+                  userID
                 );
                 if (!tokenData) {
                   throw new Error("Refresh token failed to be created");
@@ -282,10 +266,7 @@ export const userRouter = trpc
           throw new Error("Invalid request");
         }
         //check if refreshToken is valid
-        const tokenCount: number = tokenModel.refreshTokenExists(
-          req.input,
-          prisma
-        );
+        const tokenCount: number = tokenModel.refreshTokenExists(req.input);
         if (tokenCount == 0) {
           throw new Error("Refresh token does not exist");
         } else {
@@ -353,13 +334,10 @@ const sendVerificationEmail = async ({ id, email }: any) => {
   };
   try {
     // set values in userVerification collection
-    const ver = await verificationModel.createUserVerification(
-      {
-        userId: id,
-        verificationCode: randomNumber,
-      },
-      prisma
-    );
+    const ver = await verificationModel.createUserVerification({
+      userId: id,
+      verificationCode: randomNumber,
+    });
     if (!ver) {
       throw new Error("User Verifcation Creation Failed");
     } else {

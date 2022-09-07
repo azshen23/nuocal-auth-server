@@ -1,5 +1,6 @@
-async function addNewRefreshToken(token: string, userID: number, prisma: any) {
-  console.log(token, userID);
+import prisma from "../lib/prisma";
+
+async function addNewRefreshToken(token: string, userID: number) {
   const tokenData = await prisma.refreshtokens.create({
     data: {
       token: token,
@@ -10,8 +11,7 @@ async function addNewRefreshToken(token: string, userID: number, prisma: any) {
   return tokenData;
 }
 //TO DO WHY IS TOKEN ANY
-async function refreshTokenExists(token: any, prisma: any) {
-  console.log(token.token);
+async function refreshTokenExists(token: any) {
   const tokenCount = await prisma.refreshtokens.count({
     where: {
       token: token.token,
@@ -20,7 +20,7 @@ async function refreshTokenExists(token: any, prisma: any) {
   return tokenCount;
 }
 
-async function deleteRefreshToken(token: any, prisma: any) {
+async function deleteRefreshToken(token: any) {
   await prisma.refreshtokens.delete({
     where: {
       token: token.token,

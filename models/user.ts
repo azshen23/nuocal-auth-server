@@ -1,5 +1,7 @@
+import prisma from "../lib/prisma";
+
 //create a user
-async function createUser(body: any, prisma: any) {
+async function createUser(body: any) {
   const { name, username, email, password } = body;
   const user = await prisma.users.create({
     data: {
@@ -12,7 +14,7 @@ async function createUser(body: any, prisma: any) {
   return user;
 }
 
-async function deleteUser(userId: number, prisma: any) {
+async function deleteUser(userId: number) {
   await prisma.users.delete({
     where: {
       id: userId,
@@ -21,7 +23,7 @@ async function deleteUser(userId: number, prisma: any) {
 }
 
 //checks is username exists already by counting the number of users with that username
-async function usernameExists(username: string, prisma: any) {
+async function usernameExists(username: string) {
   const usernameCount = await prisma.users.count({
     where: {
       username: username,
@@ -31,7 +33,7 @@ async function usernameExists(username: string, prisma: any) {
 }
 
 //check if email exists
-async function emailExists(email: string, prisma: any) {
+async function emailExists(email: string) {
   const emailCount = await prisma.users.count({
     where: {
       email: email,
@@ -42,7 +44,7 @@ async function emailExists(email: string, prisma: any) {
 
 //get password from email
 
-async function getIDPasswordFromEmail(email: string, prisma: any) {
+async function getIDPasswordFromEmail(email: string) {
   const user = await prisma.users.findUnique({
     where: {
       email: email,
@@ -55,20 +57,17 @@ async function getIDPasswordFromEmail(email: string, prisma: any) {
   return user;
 }
 
-async function getVerificationStatus(userId: number, prisma: any) {
-  const user = await prisma.userverification.findUnique({
+async function getVerificationStatus(userId: number) {
+  const user = await prisma.users.findUnique({
     where: {
-      userid: userId,
-    },
-    select: {
-      verified: true,
+      id: userId,
     },
   });
   return user?.verified;
 }
 
 //update verfied attribute
-async function updateVerification(userId: number, prisma: any) {
+async function updateVerification(userId: number) {
   await prisma.users.update({
     where: {
       id: userId,
