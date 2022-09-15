@@ -3,7 +3,6 @@ const verificationModel = require("../models/userVerification");
 const tokenModel = require("../models/token");
 import * as trpc from "@trpc/server";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { decodeAndVerifyRefreshToken } from "../utils/verifyJwt";
 import { Context } from "../context";
@@ -29,10 +28,14 @@ export const userRouter = trpc
   .router<Context>()
   .mutation("createAccount", {
     input: z.object({
-      name: z.string(),
-      username: z.string(),
-      email: z.string(),
-      password: z.string(),
+      name: z.string().min(1),
+      username: z
+        .string()
+        .min(3, { message: "Must be 3 or more characters long" }),
+      email: z.string().email().min(1),
+      password: z
+        .string()
+        .min(8, { message: "Must be 8 or more characters long" }),
     }),
     async resolve(req) {
       let { name, username, email, password } = req.input;
@@ -41,12 +44,7 @@ export const userRouter = trpc
       email = email.trim();
       password = password.trim();
 
-      if (name === "" || username === "" || email === "" || password === "") {
-        return {
-          status: "FAILED",
-          message: "Empty inputField",
-        };
-      } else if (!/^[a-zA-Z0-9]*$/.test(name)) {
+      if (!/^[a-zA-Z0-9]*$/.test(name)) {
         return {
           status: "FAILED",
           message: "Name is not valid",
@@ -55,16 +53,6 @@ export const userRouter = trpc
         return {
           status: "FAILED",
           message: "Username is not valid",
-        };
-      } else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-        return {
-          status: "FAILED",
-          message: "Email is not valid",
-        };
-      } else if (password.length < 8) {
-        return {
-          status: "FAILED",
-          message: "Password is too short",
         };
       } else {
         try {
