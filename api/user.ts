@@ -45,15 +45,15 @@ export const userRouter = trpc
       password = password.trim();
 
       if (!/^[a-zA-Z0-9]*$/.test(name)) {
-        return {
-          status: "FAILED",
-          message: "Name is not valid",
-        };
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid characters in name",
+        });
       } else if (!/^[a-zA-Z]+$/.test(username)) {
-        return {
-          status: "FAILED",
-          message: "Username is not valid",
-        };
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid characters in username",
+        });
       } else {
         try {
           //check if username exists
@@ -61,12 +61,18 @@ export const userRouter = trpc
             username
           );
           if (userNameExists > 0) {
-            throw new Error(`User ${username} already exists`);
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Username already exists",
+            });
           } else {
             //check if email exists
             const emailExists: number = await userModel.emailExists(email);
             if (emailExists > 0) {
-              throw new Error(`Email ${email} already exists`);
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Email already exists",
+              });
             } else {
               //password handling
               const saltRound = 10;
@@ -85,7 +91,10 @@ export const userRouter = trpc
                   password: hashedPassword,
                 });
                 if (!user) {
-                  throw new Error("An error occurred while creating the user.");
+                  throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: "Failed to create user properly",
+                  });
                 } else {
                   return sendVerificationEmail(user);
                 }
@@ -107,9 +116,9 @@ export const userRouter = trpc
       verificationCode: z.number(),
     }),
     async resolve(req) {
+      const userID: number = req.input.userID;
+      const verificationCode: number = req.input.verificationCode;
       try {
-        const userID: number = req.input.userID;
-        const verificationCode: number = req.input.verificationCode;
         //check for valid inputs
         if (!userID || !verificationCode) {
           throw new trpc.TRPCError({
@@ -167,79 +176,76 @@ export const userRouter = trpc
   })
   .mutation("login", {
     input: z.object({
-      email: z.string(),
-      password: z.string(),
+      email: z.string().email(),
+      password: z.string().min(8),
     }),
     async resolve(req) {
       let { email, password } = req.input;
       email = email.trim();
       password = password.trim();
-      if (email == "" || password == "") {
-        return {
-          status: "FAILED",
-          message: "Please do not leave any fields empty",
-        };
-      } else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-        return {
-          status: "FAILED",
-          message: "Email is not valid",
-        };
-      } else {
-        try {
-          //check if email exists
-          const emailExists: number = await userModel.emailExists(email);
-
-          if (emailExists == 0) {
-            throw new Error("Email does not exist");
+      try {
+        //check if email exists
+        const emailExists: number = await userModel.emailExists(email);
+        if (emailExists == 0) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Email cannot be found to an existing user",
+          });
+        } else {
+          const userData = await userModel.getIDPasswordFromEmail(email);
+          const hashedPassword = userData.password;
+          const userID = userData.id;
+          if (!hashedPassword) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Could not retrieve password",
+            });
           } else {
-            const userData = await userModel.getIDPasswordFromEmail(email);
-            const hashedPassword = userData.password;
-            const userID = userData.id;
-            if (!hashedPassword) {
-              throw new Error(
-                "An error occurred while trying to retrieve password"
-              );
+            const correctPassword: boolean = await bcrypt.compare(
+              password,
+              hashedPassword
+            );
+            if (!correctPassword) {
+              throw new TRPCError({
+                code: "UNAUTHORIZED",
+                message: "Invalid password",
+              });
             } else {
-              const correctPassword: boolean = await bcrypt.compare(
-                password,
-                hashedPassword
+              const user: User = { id: userID, email: email };
+              const accessToken = jwt.sign(
+                user,
+                process.env.ACCESS_TOKEN_SECRET!,
+                { expiresIn: "30 minutes" }
               );
-              if (!correctPassword) {
-                throw new Error("Password is incorrect");
+              const refreshToken = jwt.sign(
+                user,
+                process.env.REFRESH_TOKEN_SECRET!
+              );
+              const tokenData = await tokenModel.addNewRefreshToken(
+                refreshToken,
+                userID
+              );
+              if (!tokenData) {
+                throw new TRPCError({
+                  code: "INTERNAL_SERVER_ERROR",
+                  message: "Refresh token could not be created",
+                });
               } else {
-                const user: User = { id: userID, email: email };
-                const accessToken = jwt.sign(
-                  user,
-                  process.env.ACCESS_TOKEN_SECRET!,
-                  { expiresIn: "30 minutes" }
-                );
-                const refreshToken = jwt.sign(
-                  user,
-                  process.env.REFRESH_TOKEN_SECRET!
-                );
-                const tokenData = await tokenModel.addNewRefreshToken(
-                  refreshToken,
-                  userID
-                );
-                if (!tokenData) {
-                  throw new Error("Refresh token failed to be created");
-                } else {
-                  return {
-                    accessToken: accessToken,
-                    refreshToken: refreshToken,
-                    status: "SUCCESS",
-                    message: "Sign in successfully",
-                  };
-                }
+                return {
+                  accessToken: accessToken,
+                  refreshToken: refreshToken,
+                  status: "SUCCESS",
+                  message: "Sign in successfully",
+                };
               }
             }
           }
-        } catch (err: any) {
-          return {
-            status: "FAILED",
-            message: err.message,
-          };
         }
+      } catch (err: any) {
+        return {
+          status: "FAILED",
+          message: err.message,
+        };
       }
     },
   })
@@ -249,33 +255,29 @@ export const userRouter = trpc
       token: z.string(),
     }),
     async resolve(req) {
-      try {
-        if (!req.input) {
-          throw new Error("Invalid request");
-        }
-        //check if refreshToken is valid
-        const tokenCount: number = tokenModel.refreshTokenExists(req.input);
-        if (tokenCount == 0) {
-          throw new Error("Refresh token does not exist");
-        } else {
-          //verifies refreshToken
-          const user = await decodeAndVerifyRefreshToken(req.input.token);
-          //creates new access token
-          const accessToken = jwt.sign(
-            { id: user.id, email: user.email },
-            process.env.ACCESS_TOKEN_SECRET!,
-            {
-              expiresIn: "30m",
-            }
-          );
-          return {
-            accessToken: accessToken,
-          };
-        }
-      } catch (err: any) {
+      if (!req.input) {
+        throw new Error("Invalid request");
+      }
+      //check if refreshToken is valid
+      const tokenCount: number = tokenModel.refreshTokenExists(req.input);
+      if (tokenCount == 0) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Refresh token does not exist",
+        });
+      } else {
+        //verifies refreshToken
+        const user = await decodeAndVerifyRefreshToken(req.input.token);
+        //creates new access token
+        const accessToken = jwt.sign(
+          { id: user.id, email: user.email },
+          process.env.ACCESS_TOKEN_SECRET!,
+          {
+            expiresIn: "30m",
+          }
+        );
         return {
-          status: "FAILED",
-          message: err.message,
+          accessToken: accessToken,
         };
       }
     },
@@ -336,10 +338,10 @@ const sendVerificationEmail = async ({ id, email }: any) => {
       };
     }
   } catch (err: any) {
-    return {
-      status: "FAILED",
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
       message: err.message,
-    };
+    });
   }
 };
 
