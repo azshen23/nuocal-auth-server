@@ -49,7 +49,7 @@ export const userRouter = trpc
           code: "BAD_REQUEST",
           message: "Invalid characters in name",
         });
-      } else if (!/^[a-zA-Z]+$/.test(username)) {
+      } else if (!/^[a-zA-Z0-9]+$/.test(username)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Invalid characters in username",
