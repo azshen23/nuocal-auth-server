@@ -26,6 +26,7 @@ let transporter = nodemailer.createTransport({
 
 export const userRouter = trpc
   .router<Context>()
+  //TODO FIX VALIDATION AND SHIT
   .mutation("createAccount", {
     input: z.object({
       name: z.string().min(1),
