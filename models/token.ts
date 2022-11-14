@@ -28,7 +28,7 @@ async function deleteRefreshToken(token: any) {
   });
 }
 
-module.exports = {
+export default {
   addNewRefreshToken,
   refreshTokenExists,
   deleteRefreshToken,

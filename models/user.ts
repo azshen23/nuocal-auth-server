@@ -42,8 +42,19 @@ async function emailExists(email: string) {
   return emailCount;
 }
 
-//get password from email
+async function getIDFromEmail(email: string) {
+  const user = await prisma.users.findUnique({
+    where: {
+      email: email,
+    },
+    select: {
+      id: true,
+    },
+  });
+  return user?.id;
+}
 
+//get password from email
 async function getIDPasswordFromEmail(email: string) {
   const user = await prisma.users.findUnique({
     where: {
@@ -78,11 +89,12 @@ async function updateVerification(userId: number) {
   });
 }
 
-module.exports = {
+export default {
   createUser,
   deleteUser,
   usernameExists,
   emailExists,
+  getIDFromEmail,
   getIDPasswordFromEmail,
   getVerificationStatus,
   updateVerification,

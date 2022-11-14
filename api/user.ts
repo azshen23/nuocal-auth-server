@@ -1,6 +1,6 @@
-const userModel = require("../models/user");
-const verificationModel = require("../models/userVerification");
-const tokenModel = require("../models/token");
+import userModel from "../models/user";
+import verificationModel from "../models/userVerification";
+import tokenModel from "../models/token";
 import * as trpc from "@trpc/server";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
@@ -113,20 +113,27 @@ export const userRouter = trpc
   })
   .mutation("verifyEmail", {
     input: z.object({
-      userID: z.number(),
+      userEmail: z.string().email(),
       verificationCode: z.number(),
     }),
     async resolve(req) {
-      const userID: number = req.input.userID;
+      const userEmail: string = req.input.userEmail;
       const verificationCode: number = req.input.verificationCode;
       try {
         //check for valid inputs
-        if (!userID || !verificationCode) {
+        if (!userEmail || !verificationCode) {
           throw new trpc.TRPCError({
             code: "BAD_REQUEST",
             message: "Empty userId or verificationCode",
           });
         } else {
+          const userID = await userModel.getIDFromEmail(userEmail);
+          if (!userID) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Email not found",
+            });
+          }
           //check if the verifcation code is valid
           const verificationInfo: any =
             await verificationModel.getVerificationInfo(userID);
@@ -194,6 +201,9 @@ export const userRouter = trpc
           });
         } else {
           const userData = await userModel.getIDPasswordFromEmail(email);
+          if (!userData) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+          }
           const hashedPassword = userData.password;
           const userID = userData.id;
           if (!hashedPassword) {
@@ -260,7 +270,7 @@ export const userRouter = trpc
         throw new Error("Invalid request");
       }
       //check if refreshToken is valid
-      const tokenCount: number = tokenModel.refreshTokenExists(req.input);
+      const tokenCount: number = await tokenModel.refreshTokenExists(req.input);
       if (tokenCount == 0) {
         throw new TRPCError({
           code: "UNAUTHORIZED",

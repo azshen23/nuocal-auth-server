@@ -47,7 +47,7 @@ async function getVerificationInfo(userId: number) {
   return user;
 }
 
-module.exports = {
+export default {
   deleteVerification,
   findUserVerification,
   getVerificationInfo,
