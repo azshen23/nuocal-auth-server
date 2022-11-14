@@ -152,7 +152,7 @@ export const userRouter = trpc
             await verificationModel.deleteVerification(userID);
             throw new trpc.TRPCError({
               code: "NOT_FOUND",
-              message: "An unexpected error occurred, please try again later.",
+              message: "Verification code expired, please try again",
             });
           } else {
             //check if the verifcation code is valid
